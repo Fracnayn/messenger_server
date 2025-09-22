@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from sqlalchemy import create_engine, Column, Integer, String, MetaData
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Column, Integer, String, MetaData, ForeignKey
+from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 
 # Инициализация приложения и базы данных
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}) # Разрешаем все запросы
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Настройка базы данных SQLite
 engine = create_engine('sqlite:///users.db', echo=True)
@@ -14,7 +14,7 @@ Base = declarative_base()
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# Модель пользователя для базы данных
+# Модель пользователя
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
@@ -24,7 +24,14 @@ class User(Base):
     def __repr__(self):
         return f"<User(username='{self.username}')>"
 
-# Создание таблицы, если её нет
+# НОВАЯ МОДЕЛЬ для хранения информации о дружбе
+class Friendship(Base):
+    __tablename__ = 'friendships'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    friend_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+
+# Создание всех таблиц
 Base.metadata.create_all(engine)
 
 # Маршрут для главной страницы
@@ -53,12 +60,10 @@ def register():
     if not password or len(password) < 4:
         return jsonify({"error": "Пароль должен быть не менее 4 символов"}), 400
 
-    # Проверка, существует ли пользователь
     existing_user = session.query(User).filter_by(username=username).first()
     if existing_user:
-        return jsonify({"error": "Пользователь с таким именем уже существует"}), 409 # Код 409 Conflict
+        return jsonify({"error": "Пользователь с таким именем уже существует"}), 409
 
-    # Создание и сохранение нового пользователя
     new_user = User(username=username, password=password)
     session.add(new_user)
     session.commit()
@@ -79,7 +84,20 @@ def login():
         print(f"Пользователь {username} успешно вошел в систему.")
         return jsonify({"status": "success", "message": "Вход выполнен успешно."}), 200
     else:
-        return jsonify({"error": "Неправильное имя пользователя или пароль"}), 401 # Код 401 Unauthorized
+        return jsonify({"error": "Неправильное имя пользователя или пароль"}), 401
+
+# НОВЫЙ МАРШРУТ для поиска пользователя
+@app.route('/search_user', methods=['POST'])
+def search_user():
+    data = request.json
+    username = data.get('username')
+    
+    user = session.query(User).filter_by(username=username).first()
+    
+    if user:
+        return jsonify({"exists": True, "username": user.username}), 200
+    else:
+        return jsonify({"exists": False}), 404 # Код 404 Not Found
 
 if __name__ == '__main__':
     app.run(debug=True)

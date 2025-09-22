@@ -1,6 +1,8 @@
 from flask import Flask, request
+from flask_cors import CORS # Добавлена новая строка
 
 app = Flask(__name__)
+CORS(app) # Добавлена новая строка, чтобы включить CORS
 
 # Маршрут для главной страницы
 @app.route('/')

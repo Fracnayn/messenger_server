@@ -1,8 +1,9 @@
 from flask import Flask, request
-from flask_cors import CORS # Добавлена новая строка
+from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app) # Добавлена новая строка, чтобы включить CORS
+# Добавлено явное разрешение на POST-запросы
+CORS(app, resources={r"/send_message": {"origins": "*", "methods": ["POST"]}})
 
 # Маршрут для главной страницы
 @app.route('/')

@@ -1,9 +1,8 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-# Добавлено явное разрешение на POST-запросы
-CORS(app, resources={r"/send_message": {"origins": "*", "methods": ["POST"]}})
+CORS(app, resources={r"/send_message": {"origins": "*", "methods": ["POST"]}, r"/register": {"origins": "*", "methods": ["POST"]}})
 
 # Маршрут для главной страницы
 @app.route('/')
@@ -18,3 +17,18 @@ def send_message():
         print(f"Получено сообщение: {data.get('text')}")
         return {"status": "success", "message": "Сообщение получено"}
     return {"status": "error", "message": "Неверные данные"}, 400
+
+# НОВЫЙ МАРШРУТ для регистрации
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username')
+    
+    if not username:
+        return jsonify({"error": "Имя пользователя обязательно"}), 400
+        
+    print(f"Запрос на регистрацию нового пользователя: {username}")
+    
+    # Здесь мы будем добавлять пользователя в базу данных
+    
+    return jsonify({"status": "success", "message": f"Пользователь {username} успешно зарегистрирован."})
